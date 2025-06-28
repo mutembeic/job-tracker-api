@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.models import user as user_model
 from app.schemas import user as user_schema
-from app.models.utils.hash import hash
-from app.auth import create_access_token
+from app.models.utils import hash
+from app.auth import create_access_token, create_refresh_token
 
 router = APIRouter()
 
@@ -36,11 +36,34 @@ def register(user: user_schema.UserCreate, db: Session = Depends(get_db)):
 @router.post("/login")
 def login(user: user_schema.UserLogin, db: Session = Depends(get_db)):
     db_user = db.query(user_model.User).filter(user_model.User.email == user.email).first()
-    if not db_user:
+    if not db_user :
         raise HTTPException(status_code=400, detail="Invalid credentials")
 
     if not hash.verify_password(user.password, db_user.hashed_password):
         raise HTTPException(status_code=400, detail="Invalid credentials")
 
-    token = create_access_token(data={"sub": db_user.email})
-    return {"access_token": token, "token_type": "bearer"}
+    access_token = create_access_token(data={"sub": db_user.email})
+    refresh_token = create_refresh_token(data={"sub": db_user.email})
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer"
+    }
+
+@router.post("/refresh")
+def refresh_token(token: str, db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(status_code=401, detail="Could not validate credentials")
+    try:
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    db_user = db.query(user_model.User).filter(user_model.User.email == email).first()
+    if not db_user:
+        raise credentials_exception
+
+    new_access_token = create_access_token(data={"sub": db_user.email})
+    return {"access_token": new_access_token, "token_type": "bearer"}

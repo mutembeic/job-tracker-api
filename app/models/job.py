@@ -14,5 +14,6 @@ class Job(Base):
     status = Column(String, default="applied")  # e.g. applied, interviewing, offer, rejected
     is_remote = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
+    is_deleted = Column(Boolean, default=False)
     user_id = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
