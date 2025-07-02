@@ -64,7 +64,7 @@ def get_my_job(
     if status:
         query = query.filter(job_model.Job.status == status)
 
-    jobs = db.query(job_model.Job).filter(job_model.Job.user_id == current_user.id).all()
+    jobs = db.query(job_model.Job).filter(job_model.Job.user_id == current_user.id,job_model.Job.is_deleted == False).all()
     return jobs
 
 #get single job by id
