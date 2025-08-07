@@ -8,6 +8,7 @@ app = FastAPI(title="Job Tracker API")
 origins = [
     "http://localhost:5176",
     "http://127.0.0.1:5176",
+    "https://job-tracker-api-five.vercel.app/" 
     # add prod domain later if needed
 ]
 
